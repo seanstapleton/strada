@@ -4,7 +4,8 @@ var Schema = mongoose.Schema;
 var logSchema = new Schema({
     user_id: String,
     dmg: Object,
-    location: String
+    location: String,
+    timestamp: String
 });
 
 module.exports = mongoose.model('Log', logSchema);
