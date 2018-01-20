@@ -16,6 +16,9 @@ module.exports = function(db) {
       if (err) {
         console.log(err);
         return res.end();
+      } else if (!user) {
+        console.log("user not found");
+        return res.end();
       }
       var log = new logSchema({user_id: user.id_, dmg: user.dmg, location: req.body.beaconID, timestamp: new Date().toUTCString()});
       log.save(function(err, info) {
