@@ -4,7 +4,8 @@ var Schema = mongoose.Schema;
 var userSchema = new Schema({
     id_: String,
     dmg: Object,
-    address: String
+    seed: String,
+    credit: Number
 });
 
 module.exports = mongoose.model('User', userSchema);

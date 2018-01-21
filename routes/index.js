@@ -4,7 +4,14 @@ module.exports = function(db) {
   var mongoose = require('mongoose');
   var userSchema = require('../models/user');
   var logSchema = require('../models/log');
+  var receiverSchema = require('../models/receiver');
   var bodyParser      = require('body-parser');
+  var IOTA = require("iota.lib.js");
+
+  var iota = new IOTA({
+      'host': 'http://localhost',
+      'port': 14700
+  });
 
   router.get('/test', function(req, res) {
     console.log("yo");
@@ -37,9 +44,49 @@ module.exports = function(db) {
     });
   });
 
+  //inp array of beaconIDs, timeframe, number of pedestrians, array of demographics, totalcost
   router.post("/requestTraffic", function(req, res) {
-    logSchema.find({location: req.body.beaconID},{}, function(err, info) {
-      console.log(info);
+    logSchema.find({
+      location: req.body.beaconID,
+      timestamp: {
+        $gt: req.body.start,
+        $lt: req.body.end
+      }
+    },{}, function(err, logs) {
+      console.log(logs);
+      var seed = process.env.seed;
+      iota.api.getNewAddress(seed, {}, function(err, address) {
+          if (err) {
+            console.log(err);
+            return err;
+          }
+          console.log(address);
+          var receiver = new receiverSchema({address: address, timestamp: new Date()});
+          receiver.save(function(err, info) {
+            if (err) console.log(err);
+            res.send({success: true, data: {address: address}});
+          });
+      });
+
+      var topup = req.body.totalcost / req.body.num_pedestrians;
+
+      for (var i = 0; i < logs.length; i++) {
+        userSchema.findOneAndUpdate({id_: logs[i].user_id}, {$inc: {credit: topup}})
+          .then(function(err, info) {
+            if (err) console.log(err);
+          });
+      }
+    });
+  });
+
+  router.post("/checkTransaction", function(req, res) {
+    iota.api.getBalances(req.body.address, 100, function(err, info) {
+      if (err) {
+        console.log(err, info);
+        res.send({success:false, err: err});
+      } else {
+        res.send({success: true, data: {balance: info.balances[0]}});
+      }
     });
   });
 
